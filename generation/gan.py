@@ -121,7 +121,7 @@ def adversarial_training_loop(generator, human_model, discriminator, dataloader,
 # 主函数
 def main(output_dir='./checkpoints', resume=False):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    json_path = "/home/zhaobingrui/MoE/data/twitter15/train_processed_tweetonly.json"
+    json_path = "../data/twitter15/train_processed_tweetonly.json"
     with open(json_path, "r") as f:
         texts = json.load(f)
     epochs = 5
@@ -130,13 +130,13 @@ def main(output_dir='./checkpoints', resume=False):
 
     # 初始化模型和判别器
     human_model = T5WithLinearLayer.load_linear(
-        "/home/zhaobingrui/MoE/flan-t5-base/",
-        "/home/zhaobingrui/MoE/saved_human_jc/",
+        "../flan-t5-base/",
+        "../saved_human_jc/",
         device
     )
     generator = T5WithLoRALayer.load_linear_layer(
-        "/home/zhaobingrui/MoE/flan-t5-base/",
-        "/home/zhaobingrui/MoE/saved_mix_linear_jc/",
+        "../flan-t5-base/",
+        "../saved_mix_linear_jc/",
         device,
         num_experts=10,
         K=16,
@@ -259,7 +259,7 @@ def save_checkpoint_as_final_models(output_dir, checkpoint_path):
 
     # 初始化生成器
     generator = T5WithLoRALayer.load_linear_layers(
-        model_name_or_path="/home/zhaobingrui/MoE/flan-t5-base/",
+        model_name_or_path="../flan-t5-base/",
         linear_layer_path=None,  # 初始化时不加载已有的线性层权重
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         num_experts=10, K=16, threshold=0.5
@@ -277,8 +277,8 @@ def save_checkpoint_as_final_models(output_dir, checkpoint_path):
 
 if __name__ == "__main__":
     '''resume = False  # 修改为 True 或 False 来决定是否恢复训练
-    output_dir = "/home/zhaobingrui/MoE/saved_gan_freeze/"
+    output_dir = "../saved_gan_freeze/"
     main(output_dir=output_dir, resume=resume)'''
-    output_dir = "/home/zhaobingrui/MoE/saved_gan_freeze/"
-    checkpoint_path = "/home/zhaobingrui/MoE/saved_gan_freeze/checkpoint_epoch_5.pth"
+    output_dir = "../saved_gan_freeze/"
+    checkpoint_path = "../saved_gan_freeze/checkpoint_epoch_5.pth"
     save_checkpoint_as_final_models(output_dir, checkpoint_path)

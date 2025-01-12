@@ -480,19 +480,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train generator"
                                      )
     parser.add_argument('--train_json', type=str, required=False,
-                        default="/home/zhaobingrui/MoE/processed_data/twitter16/train.json",
+                        default="../data/twitter16/train.json",
                         help='Path to the first input JSON file')
     parser.add_argument('--val_json', type=str, required=False,
-                        default="/home/zhaobingrui/MoE/processed_data/twitter16/val.json",
+                        default="../data/twitter16/val.json",
                         help='Path to the first input JSON file')
     parser.add_argument('--test_json', type=str, required=False,
-                        default="/home/zhaobingrui/MoE/processed_data/twitter16/test.json",
+                        default="../data/twitter16/test.json",
                         help='Path to the first input JSON file')
 
-    parser.add_argument('--bert_path', type=str, required=False, default="/home/zhaobingrui/MoE/bert/",
+    parser.add_argument('--bert_path', type=str, required=False, default="../bert/",
                         help='Path to the second input JSON file')
     parser.add_argument('--model_saved_path', type=str, required=False,
-                        default="/home/zhaobingrui/MoE/processed_data/twitter16/final_result/",
+                        default="../data/twitter16/final_result/",
                         help='Path to pretrained model or model name')
     parser.add_argument('--threads', type=float, default=0.5, required=False, help='Directory to save model')
     parser.add_argument('--epochs', type=int,
