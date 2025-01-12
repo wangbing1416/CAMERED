@@ -42,6 +42,7 @@ cd detection
 python main.py --dataset [DATASET] --model [MODEL]
 ```
 DATASET in `twitter15`, `twitter16`, `weibo16`, `weibo20`, and MODEL in `cbert`, `defend`, `casfend`, `kahan`, `cameredit`
+
 3. The evaluation metrics are saved in `./detection/json/[DATASET]`, and you can run `./read_json.py` to automatically read the json files into an excel table
 
 
