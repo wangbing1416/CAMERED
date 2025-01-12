@@ -10,7 +10,7 @@ from transformers.modeling_outputs import BaseModelOutput
 from data_loader import datamain2
 from transformers import T5Tokenizer, T5ForConditionalGeneration, AutoTokenizer, AutoModelForSeq2SeqLM
 
-# 自定义模型，添加线性层
+# define model and linear layers
 class T5WithLinearLayer(nn.Module):
     def __init__(self, model_name_or_path, device):
         super(T5WithLinearLayer, self).__init__()
@@ -35,17 +35,16 @@ class T5WithLinearLayer(nn.Module):
         self.device = device
 
     def get_decoder_hidden_states(self, input_ids, attention_mask):
-        # 计算编码器输出
+        # encoding
         encoder_outputs = self.model.encoder(input_ids=input_ids, attention_mask=attention_mask)
         encoder_hidden_states = encoder_outputs.last_hidden_state
         linear_output = self.linear(encoder_hidden_states)
 
-        # 使用 input_ids 偏移作为 decoder_input_ids
         decoder_input_ids = self.model._shift_right(input_ids)
         decoder_outputs = self.model.decoder(input_ids=decoder_input_ids, encoder_hidden_states=linear_output,
                                              encoder_attention_mask=attention_mask)
 
-        return decoder_outputs.last_hidden_state  # 返回隐藏状态
+        return decoder_outputs.last_hidden_state
 
     def generateself(self, input_ids, attention_mask, **generation_args):
         max_length = generation_args.pop("max_length", 50)
@@ -86,10 +85,9 @@ class T5WithLinearLayer(nn.Module):
 
     @classmethod
     def load_linear(cls, model_name_or_path, linear_path, device):
-        # 实例化对象
         instance = cls(model_name_or_path, device)
 
-        # 加载线性层的权重
+        # load linear layers
         linear_path = os.path.join(linear_path, "linear_layer.pt")
         instance.linear.load_state_dict(torch.load(linear_path, map_location=device))
 
@@ -97,9 +95,9 @@ class T5WithLinearLayer(nn.Module):
 
 
     def save_linear_layer(self, output_dir):
-        # 创建保存路径
+        # save
         os.makedirs(output_dir, exist_ok=True)
-        # 保存线性层的权重
+
         linear_path = os.path.join(output_dir, 'linear_layer.pt')
         torch.save(self.linear.state_dict(), linear_path)
         print(f"Linear layer weights saved to {linear_path}")
@@ -124,10 +122,10 @@ def evall(input_json_path, model_name_or_path, output_dir, resume=False, min_epo
     dataset = load_preprocessed_data(input_json_path, model_name_or_path)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     model = T5WithLinearLayer.load_linear(model_name_or_path,output_dir,device)
-    model.eval()  # 设置模型为评估模式
+    model.eval()
     total_loss = 0
 
-    with torch.no_grad():  # 禁用梯度计算
+    with torch.no_grad():
         for batch in dataloader:
             input_ids, attention_mask, target_ids = batch["input_ids"].to(device), batch["attention_mask"].to(device), \
             batch["target_ids"].to(device)
@@ -152,7 +150,6 @@ def main(input_json_path, model_name_or_path, output_dir, resume=False, min_epoc
     best_loss = float('inf')
     stop_training = False
 
-    # 尝试加载中断点
     checkpoint_path = os.path.join(output_dir, 'checkpoint.pt')
     if resume and os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location=device)
@@ -213,7 +210,6 @@ def mainhuman(data, model_name_or_path, output_dir, resume=False, min_epochs=5, 
     best_loss = float('inf')
     stop_training = False
 
-    # 尝试加载中断点
     checkpoint_path = os.path.join(output_dir, 'checkpoint.pt')
     if resume and os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location=device)
@@ -260,9 +256,9 @@ def mainhuman(data, model_name_or_path, output_dir, resume=False, min_epochs=5, 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train T5 model with linear layer and checkpoints")
-    parser.add_argument('--input_json_path', type=str, required=False, default="/home/zhaobingrui/MoE/data/twitter15/processed_train.json")
-    parser.add_argument('--model_name_or_path', type=str, required=False, default="/home/zhaobingrui/MoE/flan-t5-base/")
-    parser.add_argument('--output_dir', type=str, required=False, default="/home/zhaobingrui/MoE/saved_human_zidai/")
+    parser.add_argument('--input_json_path', type=str, required=False, default="../data/twitter15/processed_train.json")
+    parser.add_argument('--model_name_or_path', type=str, required=False, default="../flan-t5-base/")
+    parser.add_argument('--output_dir', type=str, required=False, default="../saved_human_zidai/")
     parser.add_argument('--resume', action='store_true', help='Resume training from checkpoint if available')
     parser.add_argument('--min_epochs', type=int, default=5, help='Minimum epochs before early stopping')
     parser.add_argument('--max_epochs', type=int, default=50, help='Maximum number of epochs')
@@ -272,6 +268,6 @@ if __name__ == "__main__":
     parser.add_argument('--min_delta', type=float, default=0.001, help='Minimum loss improvement to avoid early stopping')
 
     args = parser.parse_args()
-    #main(args.input_json_path, args.model_name_or_path, args.output_dir, args.resume, args.min_epochs, args.max_epochs, args.batch_size, args.learning_rate, args.patience, args.min_delta)
+    # main(args.input_json_path, args.model_name_or_path, args.output_dir, args.resume, args.min_epochs, args.max_epochs, args.batch_size, args.learning_rate, args.patience, args.min_delta)
     evall(args.input_json_path, args.model_name_or_path, args.output_dir, args.resume, args.min_epochs, args.max_epochs,
          args.batch_size, args.learning_rate, args.patience, args.min_delta)
