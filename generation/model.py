@@ -123,9 +123,6 @@ class MyModel(nn.Module):
         )
 
     def forward(self, encoded_tweets: dict, encoded_comments: dict, comments_list: List[List[str]]) -> torch.Tensor:
-        """
-        前向传播方法，输出维度为 [batch_size, num_labels]
-        """
         batch_size = encoded_tweets['input_ids'].size(0)
 
         with torch.no_grad():
