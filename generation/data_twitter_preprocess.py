@@ -171,9 +171,9 @@ def preprocess_json(input_dir, output_dir):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="预处理JSON文件夹中的Twitter数据")
-    parser.add_argument('--input_folder', type=str, required=True, help='输入文件夹路径，包含原始JSON文件')
-    parser.add_argument('--output_folder', type=str, required=True, help='输出文件夹路径，保存预处理后的JSON文件')
+    parser = argparse.ArgumentParser(description="Preprocess json files")
+    parser.add_argument('--input_folder', type=str, required=True, help='input json file')
+    parser.add_argument('--output_folder', type=str, required=True, help='output json file')
     args = parser.parse_args()
 
     input_folder = args.input_folder

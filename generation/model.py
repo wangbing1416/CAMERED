@@ -15,15 +15,12 @@ from torch.cuda.amp import autocast, GradScaler
 import multiprocessing
 
 
-# 设置多进程启动方式为 'spawn'（必须在 __main__ 保护下）
 def set_spawn_start_method():
     try:
         multiprocessing.set_start_method('spawn', force=True)
     except RuntimeError:
-        pass  # 如果已经设置，则忽略
+        pass
 
-
-# 确保设备可用
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -48,29 +45,23 @@ class MyDataset(Dataset):
         label = item['label']
         tweet = item.get('tweet') or item.get('content', '')
         comments = item.get('comments', []).copy()
-        random.shuffle(comments)  # 随机打乱评论
+        random.shuffle(comments)
         return label, tweet, comments
 
 
 def collate_fn(batch: List[Tuple[int, str, List[str]]], tokenizer: BertTokenizer, max_length: int):
-    """
-    自定义的collate函数，在数据加载阶段进行分词。
-    不移动数据到 GPU，保持在 CPU 上。
-    """
     labels, tweets, comments = zip(*batch)
     labels = torch.tensor(labels, dtype=torch.long)
 
-    # 编码tweets
     encoded_tweets = tokenizer(
         list(tweets),
         padding=True,
         truncation=True,
         return_tensors='pt',
         max_length=max_length,
-        return_token_type_ids=True  # 确保生成 token_type_ids
+        return_token_type_ids=True
     )
 
-    # 编码comments
     all_comments = [comment for comments_per_sample in comments for comment in comments_per_sample]
     if all_comments:
         encoded_comments = tokenizer(
@@ -79,10 +70,10 @@ def collate_fn(batch: List[Tuple[int, str, List[str]]], tokenizer: BertTokenizer
             truncation=True,
             return_tensors='pt',
             max_length=max_length,
-            return_token_type_ids=True  # 确保生成 token_type_ids
+            return_token_type_ids=True
         )
     else:
-        # 如果没有评论，创建空的张量
+        # if no comment, create blank tensor
         encoded_comments = {
             'input_ids': torch.empty((0, max_length), dtype=torch.long),
             'attention_mask': torch.empty((0, max_length), dtype=torch.long),
@@ -93,10 +84,6 @@ def collate_fn(batch: List[Tuple[int, str, List[str]]], tokenizer: BertTokenizer
 
 
 class CollateFnWrapper:
-    """
-    可序列化的collate_fn包装器类，避免使用lambda函数。
-    """
-
     def __init__(self, tokenizer: BertTokenizer, max_length: int = 128):
         self.tokenizer = tokenizer
         self.max_length = max_length
@@ -109,23 +96,19 @@ class MyModel(nn.Module):
     def __init__(self, bert_model_path: str, t: float, num_labels: int = 4, hidden_size: int = 768,
                  max_length: int = 128):
         super(MyModel, self).__init__()
-        self.t = t  # 相似度阈值
-        self.num_labels = num_labels  # 分类数量
+        self.t = t
+        self.num_labels = num_labels
         self.hidden_size = hidden_size
         self.max_length = max_length
 
-        # 加载标准的 BERT 模型
         self.bert = BertModel.from_pretrained(bert_model_path)
 
-        # 自注意力网络
         self.attention_plus = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=4, batch_first=True)
         self.attention_minus = nn.MultiheadAttention(embed_dim=hidden_size, num_heads=4, batch_first=True)
 
-        # 可学习的投影矩阵 W
         self.W = nn.Linear(4 * hidden_size, hidden_size)
 
-        # 分类器，动态适应不同的分类数量
-        intermediate_size = hidden_size // 2  # 中间层的维度
+        intermediate_size = hidden_size // 2
 
         self.classifier = nn.Sequential(
             nn.Linear(2 * hidden_size, hidden_size),
@@ -136,7 +119,7 @@ class MyModel(nn.Module):
             nn.BatchNorm1d(intermediate_size),
             nn.ReLU(),
             nn.Dropout(0.5),
-            nn.Linear(intermediate_size, self.num_labels)  # 最后一层输出维度为 num_labels
+            nn.Linear(intermediate_size, self.num_labels)
         )
 
     def forward(self, encoded_tweets: dict, encoded_comments: dict, comments_list: List[List[str]]) -> torch.Tensor:
@@ -236,7 +219,7 @@ def save_model(model: nn.Module, optimizer: torch.optim.Optimizer, epoch: int, s
         'optimizer_state_dict': optimizer.state_dict()
     }
     torch.save(state, save_path)
-    print(f"模型已保存至 {save_path}")
+    print(f"model has been saved in {save_path}")
 
 
 def load_model(model: nn.Module, optimizer: torch.optim.Optimizer, load_path: str) -> Tuple[
@@ -246,21 +229,20 @@ def load_model(model: nn.Module, optimizer: torch.optim.Optimizer, load_path: st
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         start_epoch = checkpoint['epoch'] + 1
-        print(f"模型已从 {load_path} 加载，继续从第 {start_epoch} 轮开始训练")
+        print(f"load model from {load_path}, trained from the {start_epoch} epoch")
         return model, optimizer, start_epoch
     else:
-        print(f"未找到模型文件 {load_path}")
+        print(f"not find {load_path}")
         return model, optimizer, 0
 
 
 def evaluate_model(model: nn.Module, dataloader: DataLoader) -> float:
-    model.eval()  # 切换到评估模式
+    model.eval()
     all_labels = []
     all_preds = []
     with torch.no_grad():
         for batch in dataloader:
             labels, encoded_tweets, comments, encoded_comments = batch
-            # 将数据移动到 GPU
             labels = labels.to(device)
             for k in encoded_tweets:
                 encoded_tweets[k] = encoded_tweets[k].to(device)
@@ -271,25 +253,23 @@ def evaluate_model(model: nn.Module, dataloader: DataLoader) -> float:
             with autocast():
                 outputs = model(encoded_tweets, encoded_comments, comments)  # [batch_size, num_labels]
 
-            _, preds = torch.max(outputs, dim=1)  # 获取预测的类别索引
+            _, preds = torch.max(outputs, dim=1)
 
             all_labels.extend(labels.cpu().numpy())
             all_preds.extend(preds.cpu().numpy())
 
-    # 计算准确率
     accuracy = accuracy_score(all_labels, all_preds)
-    print(f"模型在验证集上的准确率为: {accuracy * 100:.2f}%")
+    print(f"accuracy: {accuracy * 100:.2f}%")
     return accuracy
 
 
 def setup_logger() -> logging.Logger:
-    # 配置日志，输出到 best_accuracies.txt 和控制台
     logging.basicConfig(
         level=logging.INFO,
         format="%(message)s",
         handlers=[
-            logging.FileHandler("best_accuracies.txt"),  # 输出到同一个文件
-            logging.StreamHandler()  # 同时输出到控制台
+            logging.FileHandler("best_accuracies.txt"),
+            logging.StreamHandler()
         ]
     )
     return logging.getLogger()
@@ -307,21 +287,18 @@ def main(
         num_labels:int,
         batch_size: int
 ):
-    # 配置参数
     logger = setup_logger()
-    logger.info(f"开始训练模型，t={t}")
-    batch_size = 2  # 根据显存情况调整
+    logger.info(f"start training, t={t}")
+    batch_size = 2
     num_epochs = epochs
     best_accuracy = 0
     best_epoch = 0
     no_improvement_count = 0
 
-    # 初始化 tokenizer
     tokenizer = BertTokenizer.from_pretrained(bert_model_path)
 
-    # --- 训练和验证阶段 ---
-    # 加载训练数据
-    train_dataset = MyDataset(train_json, tokenizer, max_length=64)  # 根据需求调整 max_length
+    # train and evaluation
+    train_dataset = MyDataset(train_json, tokenizer, max_length=64)
     collate_wrapper = CollateFnWrapper(tokenizer, max_length=64)
     train_dataloader = DataLoader(
         train_dataset,
@@ -329,11 +306,10 @@ def main(
         shuffle=True,
         collate_fn=collate_wrapper,
         drop_last=True,
-        num_workers=4,  # 根据系统资源调整
+        num_workers=4,
         pin_memory=True if torch.cuda.is_available() else False
     )
 
-    # 加载验证数据
     val_dataset = MyDataset(val_json, tokenizer, max_length=64)
     val_dataloader = DataLoader(
         val_dataset,
@@ -344,10 +320,8 @@ def main(
         pin_memory=True if torch.cuda.is_available() else False
     )
 
-    # 初始化模型
     model = MyModel(bert_model_path, t, num_labels).to(device)
 
-    # 定义损失函数和优化器
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam([
         {'params': model.attention_plus.parameters(), 'lr': 1e-5},
@@ -356,26 +330,22 @@ def main(
         {'params': model.classifier.parameters(), 'lr': 1e-5}
     ])
 
-    # 定义学习率调度器
     num_training_steps = num_epochs * len(train_dataloader)
-    num_warmup_steps = int(0.02 * num_training_steps)  # 2% 的steps用于warmup
+    num_warmup_steps = int(0.02 * num_training_steps)
     scheduler = get_linear_schedule_with_warmup(
         optimizer,
         num_warmup_steps=num_warmup_steps,
         num_training_steps=num_training_steps
     )
 
-    # 初始化 GradScaler
-    scaler = GradScaler()  # 不传递 device_type，兼容旧版本 PyTorch
+    scaler = GradScaler()
 
-    # 训练循环
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0
         for step, batch in enumerate(train_dataloader):
             labels, encoded_tweets, comments, encoded_comments = batch
 
-            # 将数据移动到 GPU
             labels = labels.to(device)
             for k in encoded_tweets:
                 encoded_tweets[k] = encoded_tweets[k].to(device)
@@ -396,32 +366,28 @@ def main(
             scheduler.step()
             total_loss += loss.item()
 
-            # 释放未使用的缓存内存
             torch.cuda.empty_cache()
 
         avg_loss = total_loss / len(train_dataloader)
-        logger.info(f"Epoch {epoch + 1}, 平均损失: {avg_loss:.4f}")
+        logger.info(f"Epoch {epoch + 1}, average loss: {avg_loss:.4f}")
 
-        # 评估模型
         accuracy = evaluate_model(model, val_dataloader)
-        logger.info(f"Epoch {epoch + 1}, 验证集准确率: {accuracy * 100:.2f}%")
+        logger.info(f"Epoch {epoch + 1}, validate accuracy: {accuracy * 100:.2f}%")
         if accuracy > best_accuracy:
             best_accuracy = accuracy
             best_epoch = epoch + 1
             no_improvement_count = 0
             save_model(model, optimizer, epoch, model_saved_path)
-            logger.info(f"保存最佳模型至 {model_saved_path} (Epoch {epoch + 1})")
+            logger.info(f"save the best model in {model_saved_path} (Epoch {epoch + 1})")
         else:
             no_improvement_count += 1
 
-        # 提前停止条件
         if no_improvement_count >= patience:
-            logger.info(f"提前停止训练。最佳 Epoch: {best_epoch}, 最佳准确率: {best_accuracy * 100:.2f}%")
+            logger.info(f"Early stop, the best epoch: {best_epoch}, best accuracy: {best_accuracy * 100:.2f}%")
             break
 
-    logger.info(f"训练完成。最佳 Epoch: {best_epoch}, 最佳准确率: {best_accuracy * 100:.2f}%\n")
+    logger.info(f"training finish. The best Epoch: {best_epoch}, the best accuracy: {best_accuracy * 100:.2f}%\n")
 
-    # --- 释放训练和验证数据 ---
     del train_dataset
     del train_dataloader
     del val_dataset
@@ -429,8 +395,7 @@ def main(
     del model
     torch.cuda.empty_cache()
 
-    # --- 测试阶段 ---
-    # 重新加载模型
+    # testing
     model = MyModel(bert_model_path, t, num_labels=4).to(device)
     optimizer = torch.optim.Adam([
         {'params': model.attention_plus.parameters(), 'lr': 1e-5},
@@ -438,13 +403,12 @@ def main(
         {'params': model.W.parameters(), 'lr': 1e-5},
         {'params': model.classifier.parameters(), 'lr': 1e-5}
     ])
-    # 加载最佳模型权重
+
     checkpoint = torch.load(model_saved_path, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     model.eval()
 
-    # 加载测试数据
     test_dataset = MyDataset(test_json, tokenizer, max_length=128)
     test_dataloader = DataLoader(
         test_dataset,
@@ -455,15 +419,12 @@ def main(
         pin_memory=True if torch.cuda.is_available() else False
     )
 
-    # 评估模型在测试集上的性能
     test_accuracy = evaluate_model(model, test_dataloader)
-    print(f"测试集准确率: {test_accuracy * 100:.2f}%")
+    print(f"testing accuracy: {test_accuracy * 100:.2f}%")
 
-    # 记录每个 `t` 的最佳准确率
     with open("best_accuracies.txt", "a") as f:
         f.write(f"Best Epoch: {best_epoch}, Best Accuracy: {best_accuracy * 100:.2f}%\n")
 
-    # --- 释放测试数据 ---
     del test_dataset
     del test_dataloader
     del model
@@ -473,8 +434,6 @@ def main(
 
 if __name__ == "__main__":
     import argparse
-
-    # 设置多进程启动方式为 'spawn'（必须在 __main__ 保护下）
     set_spawn_start_method()
 
     parser = argparse.ArgumentParser(description="Train generator"

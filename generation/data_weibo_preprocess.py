@@ -105,7 +105,7 @@ def preprocess_json(input_dir, output_dir):
                     comments = entry.get('comments', [])
                     id = label_counter
                     label_counter += 1
-                    # 修改 label 的值
+                    # map labels
                     if label == "real":
                         label = 1
                     elif label == "fake":
@@ -126,7 +126,7 @@ def preprocess_json(input_dir, output_dir):
                     }
 
                     json.dump(new_entry, outfile, ensure_ascii=False)
-                    outfile.write('\n')  # 每条记录一行
+                    outfile.write('\n')
 
         elif json_format == 'object':
             with open(json_file, 'r', encoding='utf-8') as infile, \
@@ -177,9 +177,9 @@ def preprocess_json(input_dir, output_dir):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="预处理JSON文件夹中的Weibo数据")
-    parser.add_argument('--input_folder', type=str, required=True, help='输入文件夹路径，包含原始JSON文件')
-    parser.add_argument('--output_folder', type=str, required=True, help='输出文件夹路径，保存预处理后的JSON文件')
+    parser = argparse.ArgumentParser(description="preprocess json file")
+    parser.add_argument('--input_folder', type=str, required=True, help='input json file')
+    parser.add_argument('--output_folder', type=str, required=True, help='output json file')
     args = parser.parse_args()
 
     input_folder = args.input_folder

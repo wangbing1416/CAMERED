@@ -100,8 +100,8 @@ class T5WithLoRALayer(nn.Module):
                 param.requires_grad = requires_grad
 
         # weighting experts
-        selected_weights = torch.stack([routing_weights[..., i] for i in best_group], dim=-1)  # 选中的权重
-        normalized_weights = selected_weights / selected_weights.sum(dim=-1, keepdim=True)  # 对选中权重进行归一化
+        selected_weights = torch.stack([routing_weights[..., i] for i in best_group], dim=-1)
+        normalized_weights = selected_weights / selected_weights.sum(dim=-1, keepdim=True)
 
         # normalizing
         combined_output_weighted = sum(normalized_weights[..., idx].unsqueeze(-1) * expert_outputs[i]
@@ -268,10 +268,10 @@ class T5WithLoRALayer(nn.Module):
                 best_group = group
 
         # combined_output_weighted = sum(routing_weights[..., i].unsqueeze(-1) * expert_outputs[i] for i in best_group) / len(best_group)
-        selected_weights = torch.stack([routing_weights[..., i] for i in best_group], dim=-1)  # 选中的权重
-        normalized_weights = selected_weights / selected_weights.sum(dim=-1, keepdim=True)  # 对选中权重进行归一化
+        selected_weights = torch.stack([routing_weights[..., i] for i in best_group], dim=-1)
+        normalized_weights = selected_weights / selected_weights.sum(dim=-1, keepdim=True)
 
-        # 使用归一化的权重计算 combined_output_weighted
+        # weighting combined_output_weighted
         combined_output_weighted = sum(normalized_weights[..., idx].unsqueeze(-1) * expert_outputs[i]
                                        for idx, i in enumerate(best_group))
 
@@ -443,6 +443,8 @@ def main(input_json_path_1, input_json_path_2, model_name_or_path, output_dir, b
     # Final model and tokenizer save
     model.save_linear_layer(output_dir)
     model.tokenizer.save_pretrained(output_dir)
+
+    
 def mainmoe(data, model_name_or_path, output_dir, batch_size, learning_rate,
          num_experts, K, threads, resume=False, min_epochs=5, max_epochs=50):
     if not os.path.exists(output_dir):

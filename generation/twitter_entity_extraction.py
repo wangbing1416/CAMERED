@@ -125,7 +125,7 @@ def main():
             # extract entities
             doc = nlp(tweet_text)
             entities = [ent.text for ent in doc.ents]
-            nouns = [token.text for token in doc if token.pos_ == "NOUN"]  # 提取名词
+            nouns = [token.text for token in doc if token.pos_ == "NOUN"]
 
             # combine entities
             unique_keywords = list(set(entities + nouns))
