@@ -67,7 +67,7 @@ class CameReditModel(torch.nn.Module):
         for news, co in zip(news_feature, comment_features):
             cosine_similarities = F.cosine_similarity(co, news.unsqueeze(0), dim=-1)
             sorted_indices = torch.argsort(cosine_similarities, descending=True)
-            split_point = len(co) // 2  # 平均分割点
+            split_point = len(co) // 2
 
             if co.shape[0] == 1: high_similarity_indices = sorted_indices[:split_point + 1]
             else: high_similarity_indices = sorted_indices[:split_point]
