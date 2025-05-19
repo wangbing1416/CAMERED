@@ -1,5 +1,5 @@
 # CAMERED
-This repo is the released code of our **SIGIR 2025** work **Collaboration and Controversy Among Experts: Rumor Early Detection by Tuning a Comment Generator**
+This repo is the released code of our **SIGIR 2025** work **Collaboration and Controversy Among Experts: Rumor Early Detection by Tuning a Comment Generator** and our extended paper **Multi-View Controversy Among Multi-Expert Comments for Rumor Early Detection**.
 
 
 ### 0 - Requirements
