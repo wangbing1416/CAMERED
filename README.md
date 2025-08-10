@@ -48,7 +48,7 @@ DATASET in `twitter15`, `twitter16`, `weibo16`, `weibo20`, and MODEL in `cbert`,
 
 ### Citation
 ```
-@inproceedings{DBLP:conf/sigir/WangZ0LG025,
+@inproceedings{wang2025collaboration,
   author       = {Bing Wang and
                   Bingrui Zhao and
                   Ximing Li and
@@ -63,4 +63,5 @@ DATASET in `twitter15`, `twitter16`, `weibo16`, `weibo20`, and MODEL in `cbert`,
   doi          = {10.1145/3726302.3729928},
 }
 ```
+
 
