@@ -48,5 +48,19 @@ DATASET in `twitter15`, `twitter16`, `weibo16`, `weibo20`, and MODEL in `cbert`,
 
 ### Citation
 ```
-
+@inproceedings{DBLP:conf/sigir/WangZ0LG025,
+  author       = {Bing Wang and
+                  Bingrui Zhao and
+                  Ximing Li and
+                  Changchun Li and
+                  Wanfu Gao and
+                  Shengsheng Wang},
+  title        = {Collaboration and Controversy Among Experts: Rumor Early Detection by Tuning a Comment Generator},
+  booktitle    = {International {ACM} {SIGIR} Conference on Research and Development in Information Retrieval},
+  pages        = {468--478},
+  publisher    = {{ACM}},
+  year         = {2025},
+  doi          = {10.1145/3726302.3729928},
+}
 ```
+
